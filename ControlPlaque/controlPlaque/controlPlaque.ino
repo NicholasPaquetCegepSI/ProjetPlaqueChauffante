@@ -4,6 +4,13 @@
 
 #define LM35 A0
 
+#define RELAI 3
+
+#define BTN 4
+
+unsigned long millisPrecedent = 0;  // Variable globale pour garder le compte sur le temps.
+bool relaiActif = false;
+
 void setup() {
   Serial.begin(9600);
 
@@ -13,16 +20,37 @@ void setup() {
   pinMode(LED_VERTE, OUTPUT);
 
   pinMode(LM35, INPUT);
+  analogReadResolution(12);
+
+  pinMode(RELAI, OUTPUT);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  test();
+}
+
+void test() {
+  // Test leds
   digitalWrite(LED_BLEUE, HIGH);
   digitalWrite(LED_JAUNE, HIGH);
   digitalWrite(LED_VERTE, HIGH);
 
-  analogReadResolution(12);
-  getTemperature(true);
+  // getTemperature(true);
+
+  if (tempo(5000)) {
+    Serial.println("changement d'etat du relai");
+    relaiActif = !relaiActif;
+  }
+
+  // Test du relai
+  // if (relaiActif) {
+  //   digitalWrite(RELAI, HIGH);
+  //   Serial.println("Relai ON");
+  // } else {
+
+  //   digitalWrite(RELAI, LOW);
+  //   Serial.println("Relai OFF");
+  // }
 }
 
 void getTemperature(bool print) {
@@ -31,7 +59,7 @@ void getTemperature(bool print) {
   // Calcul de conversion pour une résolution de 12 bits
   double temperatureCelcius = (double)valeurDuCapteur * (3.3 / 40.96);
 
-  if (print) {
+  if (print && tempo(3000)) {
     Serial.print("Température: ");
     Serial.println(temperatureCelcius);
   }
