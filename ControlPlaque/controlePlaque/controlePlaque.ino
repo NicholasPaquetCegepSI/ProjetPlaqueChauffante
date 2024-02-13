@@ -29,6 +29,10 @@ void loop() {
   test();
 }
 
+bool temperatureAtteinte = true;
+double limiteTemperature = 50;
+double ecartTemperature = 5;
+
 void test() {
   // Test leds
   digitalWrite(LED_BLEUE, HIGH);
@@ -37,32 +41,43 @@ void test() {
 
   // getTemperature(true);
 
-  if (tempo(5000)) {
-    Serial.println("changement d'etat du relai");
-    relaiActif = !relaiActif;
+  double temp = getTemperature(true);
+
+  // if (tempo(5000)) {
+  if (temp <= limiteTemperature && !temperatureAtteinte) {
+    // Serial.println("changement d'etat du relai");
+    relaiActif = true;
+  } else {
+    temperatureAtteinte = true;
+    relaiActif = false;
+
+    if (temp <= limiteTemperature - ecartTemperature)
+      temperatureAtteinte = false;
   }
 
   // Test du relai
-  // if (relaiActif) {
-  //   digitalWrite(RELAI, HIGH);
-  //   Serial.println("Relai ON");
-  // } else {
+  if (relaiActif) {
+    digitalWrite(RELAI, HIGH);
+    // Serial.println("Relai ON");
+  } else {
 
-  //   digitalWrite(RELAI, LOW);
-  //   Serial.println("Relai OFF");
-  // }
+    digitalWrite(RELAI, LOW);
+    // Serial.println("Relai OFF");
+  }
 }
 
-void getTemperature(bool print) {
+double getTemperature(bool print) {
   // Lecture de la valeur analogique du capteur
   int valeurDuCapteur = analogRead(LM35);
   // Calcul de conversion pour une résolution de 12 bits
   double temperatureCelcius = (double)valeurDuCapteur * (3.3 / 40.96);
 
-  if (print && tempo(3000)) {
+  if (print) {
     Serial.print("Température: ");
     Serial.println(temperatureCelcius);
   }
+
+  return temperatureCelcius;
 }
 
 // Fonction de temporisation, retourne faux tant que la durée passée en argument ne s'est pas écoulée.
