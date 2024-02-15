@@ -1,4 +1,4 @@
-#define LED_BLEUE 0
+#define LED_ROUGE 0
 #define LED_JAUNE 1
 #define LED_VERTE 2
 
@@ -15,18 +15,41 @@ void setup() {
   Serial.begin(9600);
 
   // Déclaration des LEDs
-  pinMode(LED_BLEUE, OUTPUT);
+  pinMode(LED_ROUGE, OUTPUT);
   pinMode(LED_JAUNE, OUTPUT);
   pinMode(LED_VERTE, OUTPUT);
 
+  // Déclaration capteur de température LM35
   pinMode(LM35, INPUT);
   analogReadResolution(12);
 
+  // Déclaraction du relai
   pinMode(RELAI, OUTPUT);
+
+  // Déclaration du bouton poussoir
+  pinMode(BTN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(BTN), interrupt, RISING);
+}
+
+bool circuitActif = false;
+
+void interrupt() {
+  delay(200);
+  circuitActif = !circuitActif;
+  Serial.println("Le circuit est maintenant actif!");
 }
 
 void loop() {
-  test();
+
+  // if (digitalRead(BTN) == HIGH){
+  //   circuitActif = !circuitActif;
+  //   Serial.println("Le bouton a ete appuye!");
+  // }
+
+  testLeds();
+
+  // if (circuitActif)
+  //   test();
 }
 
 bool temperatureAtteinte = true;
@@ -34,36 +57,53 @@ double limiteTemperature = 50;
 double ecartTemperature = 5;
 
 void test() {
-  // Test leds
-  digitalWrite(LED_BLEUE, HIGH);
-  digitalWrite(LED_JAUNE, HIGH);
-  digitalWrite(LED_VERTE, HIGH);
+  if(circuitActif){
+    testLeds();
+  }
+  else {
 
-  // getTemperature(true);
-
-  double temp = getTemperature(true);
-
-  // if (tempo(5000)) {
-  if (temp <= limiteTemperature && !temperatureAtteinte) {
-    // Serial.println("changement d'etat du relai");
-    relaiActif = true;
-  } else {
-    temperatureAtteinte = true;
-    relaiActif = false;
-
-    if (temp <= limiteTemperature - ecartTemperature)
-      temperatureAtteinte = false;
   }
 
-  // Test du relai
-  if (relaiActif) {
-    digitalWrite(RELAI, HIGH);
-    // Serial.println("Relai ON");
-  } else {
 
-    digitalWrite(RELAI, LOW);
-    // Serial.println("Relai OFF");
-  }
+  // if (circuitActif) {
+  //   // Test leds
+  //   digitalWrite(LED_ROUGE, HIGH);
+  //   digitalWrite(LED_JAUNE, HIGH);
+  //   digitalWrite(LED_VERTE, HIGH);
+
+  //   // getTemperature(true);
+
+  //   double temp = getTemperature(true);
+
+  //   // if (tempo(5000)) {
+  //   // if (temp <= limiteTemperature && !temperatureAtteinte) {
+  //   //   // Serial.println("changement d'etat du relai");
+  //   //   relaiActif = true;
+  //   // } else {
+  //   //   temperatureAtteinte = true;
+  //   //   relaiActif = false;
+
+  //   //   if (temp <= limiteTemperature - ecartTemperature)
+  //   //     temperatureAtteinte = false;
+  //   // }
+
+  //   // Test du relai
+  //   if (relaiActif) {
+  //     digitalWrite(RELAI, HIGH);
+  //     // Serial.println("Relai ON");
+  //   } else {
+
+  //     digitalWrite(RELAI, LOW);
+  //     // Serial.println("Relai OFF");
+  //   }
+  // } else
+  //   digitalWrite(LED_ROUGE, LOW);
+}
+
+void testLeds() {
+  digitalWrite(LED_ROUGE, circuitActif);
+  digitalWrite(LED_JAUNE, circuitActif);
+  digitalWrite(LED_VERTE, circuitActif);
 }
 
 double getTemperature(bool print) {
