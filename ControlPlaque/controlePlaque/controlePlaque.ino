@@ -1,6 +1,3 @@
-#include <AM2302-Sensor.h>
-#include <DHT.h>
-
 #define LED_ROUGE 0
 #define LED_JAUNE 1
 #define LED_VERTE 2
@@ -10,12 +7,6 @@
 #define RELAI 3
 
 #define BTN 4
-
-#define DHT22 6
-AM2302::AM2302_Sensor am2302{ DHT22 };
-
-#define DHTTYPE DHT22     // Type du capteur (AM2302)
-DHT dht(DHT22, DHTTYPE);  // Objet pour l'utilisation du capteur DHT22
 
 unsigned long millisPrecedent = 0;  // Variable globale pour garder le compte sur le temps.
 bool relaiActif = false;
@@ -154,23 +145,6 @@ void testLeds() {
   digitalWrite(LED_ROUGE, circuitActif);
   digitalWrite(LED_JAUNE, circuitActif);
   digitalWrite(LED_VERTE, circuitActif);
-}
-
-// Lit les données du capteur et les retourne dans un string.
-float getTemperatureDHT22(bool print) {
-  // auto status = am2302.read();
-
-  // Capture de la temperature
-  float temperatureCelcius = dht.readTemperature();
-  if (print) {
-    // Serial.print("\n\nstatus of sensor read(): ");
-    // Serial.println(status);
-
-    Serial.print("Température:");
-    Serial.println(temperatureCelcius);
-  }
-
-  return temperatureCelcius;
 }
 
 double getTemperature(bool print) {
