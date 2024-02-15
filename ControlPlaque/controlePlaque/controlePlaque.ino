@@ -1,3 +1,6 @@
+#include <AM2302-Sensor.h>
+#include <DHT.h>
+
 #define LED_ROUGE 0
 #define LED_JAUNE 1
 #define LED_VERTE 2
@@ -8,11 +11,22 @@
 
 #define BTN 4
 
+#define DHT22 6
+AM2302::AM2302_Sensor am2302{ DHT22 };
+
+#define DHTTYPE DHT22     // Type du capteur (AM2302)
+DHT dht(DHT22, DHTTYPE);  // Objet pour l'utilisation du capteur DHT22
+
 unsigned long millisPrecedent = 0;  // Variable globale pour garder le compte sur le temps.
 bool relaiActif = false;
 
 void setup() {
   Serial.begin(9600);
+
+  // am2302.begin();
+  dht.begin();
+
+
 
   // Déclaration des LEDs
   pinMode(LED_ROUGE, OUTPUT);
@@ -29,81 +43,134 @@ void setup() {
   // Déclaration du bouton poussoir
   pinMode(BTN, INPUT);
   attachInterrupt(digitalPinToInterrupt(BTN), interrupt, RISING);
+
+  pinMode(DHT22, INPUT);
+  // dht.begin();  // Demarrage de lecture du capteur DHT22
+
+
+  delay(1000);
+  Serial.println("Demarrage du Arduino");
 }
 
 bool circuitActif = false;
 
 void interrupt() {
-  delay(200);
+  delay(500);
   circuitActif = !circuitActif;
-  Serial.println("Le circuit est maintenant actif!");
+
+  if (circuitActif)
+    Serial.println("ON: Le circuit est maintenant actif!");
+  else
+    Serial.println("OFF: Le circuit est maintenant inactif!");
+
+  digitalWrite(LED_VERTE, circuitActif);
 }
 
 void loop() {
+
 
   // if (digitalRead(BTN) == HIGH){
   //   circuitActif = !circuitActif;
   //   Serial.println("Le bouton a ete appuye!");
   // }
 
-  testLeds();
+  // testLeds();
+  test();
 
   // if (circuitActif)
   //   test();
 }
 
 bool temperatureAtteinte = true;
-double limiteTemperature = 50;
+double limiteTemperature = 35;
 double ecartTemperature = 5;
 
 void test() {
-  if(circuitActif){
+  if (circuitActif) {
+    // testLeds();
+    testPlaque();
+  } else {
     testLeds();
+    digitalWrite(RELAI, LOW);
   }
-  else {
+}
 
+double temp = 0;
+
+void controlerPlaque() {
+  // Lecture de la temperature aux 2 secondes
+  if (tempo(2000))
+    temp = getTemperature(true);
+
+  // Si la température est inférieure à celle voulue et que la 
+  // température désirée n'a pas été atteinte, le relai sera activé.  
+  if (temp <= limiteTemperature && !temperatureAtteinte) {    
+    relaiActif = true;
+  } 
+  // Si la température dépasse la limite, le relai sera désactivé
+  // et la température désirée sera donc atteinte  
+  else {    
+    temperatureAtteinte = true;
+    relaiActif = false;
+
+    // Si la température baisse sous le seuil de l'intervalle de température
+    // La température désirée ne sera plus atteinte
+    if (temp <= limiteTemperature - ecartTemperature)
+      temperatureAtteinte = false;
   }
 
+  // L'état du relai et de la LED rouge dépende du booléen contrôlant le relai
+  digitalWrite(LED_ROUGE, relaiActif);
+  digitalWrite(RELAI, relaiActif);
+}
 
-  // if (circuitActif) {
-  //   // Test leds
-  //   digitalWrite(LED_ROUGE, HIGH);
-  //   digitalWrite(LED_JAUNE, HIGH);
-  //   digitalWrite(LED_VERTE, HIGH);
+void testPlaque() {
 
-  //   // getTemperature(true);
+  if (tempo(2000))
+    temp = getTemperature(true);
 
-  //   double temp = getTemperature(true);
+  if (temp <= limiteTemperature && !temperatureAtteinte) {
+    // if (tempo(2000))
+    //   Serial.println("La plaque chauffe");
+    // Serial.println("changement d'etat du relai");
+    relaiActif = true;
+    digitalWrite(LED_ROUGE, HIGH);
+  } else {
+    // if (tempo(2000))
+    //   Serial.println("La plaque ne chauffe pas");
 
-  //   // if (tempo(5000)) {
-  //   // if (temp <= limiteTemperature && !temperatureAtteinte) {
-  //   //   // Serial.println("changement d'etat du relai");
-  //   //   relaiActif = true;
-  //   // } else {
-  //   //   temperatureAtteinte = true;
-  //   //   relaiActif = false;
+    digitalWrite(LED_ROUGE, LOW);
+    temperatureAtteinte = true;
+    relaiActif = false;
 
-  //   //   if (temp <= limiteTemperature - ecartTemperature)
-  //   //     temperatureAtteinte = false;
-  //   // }
+    if (temp <= limiteTemperature - ecartTemperature)
+      temperatureAtteinte = false;
+  }
 
-  //   // Test du relai
-  //   if (relaiActif) {
-  //     digitalWrite(RELAI, HIGH);
-  //     // Serial.println("Relai ON");
-  //   } else {
-
-  //     digitalWrite(RELAI, LOW);
-  //     // Serial.println("Relai OFF");
-  //   }
-  // } else
-  //   digitalWrite(LED_ROUGE, LOW);
+  digitalWrite(RELAI, relaiActif);
 }
 
 void testLeds() {
   digitalWrite(LED_ROUGE, circuitActif);
   digitalWrite(LED_JAUNE, circuitActif);
   digitalWrite(LED_VERTE, circuitActif);
+}
+
+// Lit les données du capteur et les retourne dans un string.
+float getTemperatureDHT22(bool print) {
+  // auto status = am2302.read();
+
+  // Capture de la temperature
+  float temperatureCelcius = dht.readTemperature();
+  if (print) {
+    // Serial.print("\n\nstatus of sensor read(): ");
+    // Serial.println(status);
+
+    Serial.print("Température:");
+    Serial.println(temperatureCelcius);
+  }
+
+  return temperatureCelcius;
 }
 
 double getTemperature(bool print) {
@@ -113,7 +180,7 @@ double getTemperature(bool print) {
   double temperatureCelcius = (double)valeurDuCapteur * (3.3 / 40.96);
 
   if (print) {
-    Serial.print("Température: ");
+    Serial.print("Température:");
     Serial.println(temperatureCelcius);
   }
 
